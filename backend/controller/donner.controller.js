@@ -82,7 +82,7 @@ const getRequestsByUserId = async (req, res) => {
 // file, form_data
 const addDonnerProduct = async (req, res) => {
   const form_data = JSON.parse(req.body.form_data);
-
+  const file_name = req.file.filename;
   try {
     const Donner = new Donner({
       userId: form_data.userId,
@@ -90,16 +90,19 @@ const addDonnerProduct = async (req, res) => {
       description: form_data.description,
       state: "pending",
       location: form_data.location,
+      quantity: form_data.quantity,
+      leftQuantity: form_data.quantity,
+      pdfFile: file_name
     });
     
     await Donner.save();
-    const fileUpload=new FileUpload({
-        productId:Donner._id,
-        imageName:req.file.originalname,
-        imageData:req.file.buffer,
-        contentType:req.file.mimetype
-    })
-    await fileUpload.save();
+    // const fileUpload=new FileUpload({
+    //     productId:Donner._id,
+    //     imageName:req.file.originalname,
+    //     imageData:req.file.buffer,
+    //     contentType:req.file.mimetype
+    // })
+    // await fileUpload.save();
     res.status(201).json({ message: "Product added successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -137,6 +140,34 @@ const updateDonnerProduct = async (req, res) => {
     }
 }
 
+const placeOrder=async(req,res)=>{
+    const {productId,quantity,donnerId,receiverId}=req.body;
+    try {
+      const product =await Donner.findById(productId);
+      if(!product){
+        return res.status(404).json({message:"Product not found"});
+      }
+      if(product.leftQuantity<quantity){
+        return res.status(400).json({message:"Insufficient product quantity"});
+      }
+      // product.quantity-=quantity;
+      // await product.save();
+      product.leftQuantity-=quantity;
+      await product.save();
+      const donationInfo=new{
+        donnner:product.userId,
+        receiver:receiverId,
+        quantity:quantity,
+        productId:product._id
+      }
+      await donationInfo.save();
+      res.status(200).json({message:"Order placed successfully"});
+
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+}
+
 export {
   pendingDonner,
   approvedDonner,
@@ -145,5 +176,7 @@ export {
   getRequestsByUserId,
   addDonnerProduct,
   deleteDonnerProduct,
-  updateDonnerProduct
+  updateDonnerProduct,
+  placeOrder
 };
+

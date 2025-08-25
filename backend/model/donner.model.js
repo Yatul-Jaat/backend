@@ -7,7 +7,10 @@ const productSchema = new mongoose.Schema({
     state:{type:String,required:true,enum:["approved","pending","deleted"]},
     //tag:{type:[String],default:[]},
     location:{type:String,required:true},
+    quantity:{type:Number,default:1},
+    leftQuantity:{type:Number,default:1},
     date:{type:Date,default:Date.now},
+    pdfFile: { type: String, default: "" },
 });
 
 const Donner = mongoose.model("Donner", productSchema);
